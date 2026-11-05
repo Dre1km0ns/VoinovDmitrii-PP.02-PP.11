@@ -1,0 +1,16 @@
+digraph ER {
+ graph [rankdir=LR, fontname="DejaVu Sans", splines=spline, nodesep=0.6, ranksep=1.0, dpi=150];
+ node [shape=plaintext, fontname="DejaVu Sans", fontsize=11];
+ edge [fontname="DejaVu Sans", fontsize=10, arrowhead=crowodot, arrowtail=teetee, labeldistance=2, dir=both];
+ role [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#cfe2f3"><b>Роли</b></td></tr><tr><td align="left">PK id_роли</td></tr><tr><td align="left">название (UQ)</td></tr></table>>];
+ user [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#cfe2f3"><b>Пользователи</b></td></tr><tr><td align="left">PK id_пользователя</td></tr><tr><td align="left">логин (UQ)</td></tr><tr><td align="left">хеш_пароля</td></tr><tr><td align="left">фио</td></tr><tr><td align="left">FK id_роли</td></tr></table>>];
+ guest [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#cfe2f3"><b>Гости</b></td></tr><tr><td align="left">PK id_гостя</td></tr><tr><td align="left">фио</td></tr><tr><td align="left">телефон (UQ)</td></tr><tr><td align="left">email</td></tr></table>>];
+ hall [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#cfe2f3"><b>Залы</b></td></tr><tr><td align="left">PK id_зала</td></tr><tr><td align="left">название (UQ)</td></tr><tr><td align="left">описание</td></tr></table>>];
+ tbl [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#cfe2f3"><b>Столики</b></td></tr><tr><td align="left">PK id_столика</td></tr><tr><td align="left">FK id_зала</td></tr><tr><td align="left">номер</td></tr><tr><td align="left">вместимость</td></tr></table>>];
+ book [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="4"><tr><td bgcolor="#f9cb9c"><b>Брони</b></td></tr><tr><td align="left">PK id_брони</td></tr><tr><td align="left">FK id_гостя</td></tr><tr><td align="left">FK id_столика</td></tr><tr><td align="left">FK id_пользователя</td></tr><tr><td align="left">дата</td></tr><tr><td align="left">время_начала</td></tr><tr><td align="left">время_окончания</td></tr><tr><td align="left">кол_во_гостей</td></tr><tr><td align="left">статус</td></tr><tr><td align="left">создана</td></tr></table>>];
+ role -> user [label="1 : N  назначена"];
+ user -> book [label="1 : N  оформляет"];
+ guest -> book [label="1 : N  делает"];
+ hall -> tbl [label="1 : N  содержит"];
+ tbl -> book [label="1 : N  бронируется"];
+}
