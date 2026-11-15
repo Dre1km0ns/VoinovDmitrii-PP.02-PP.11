@@ -1,0 +1,32 @@
+<html><head><meta charset="utf-8"><style>
+body{font-family:"DejaVu Sans",Arial,sans-serif;margin:0;background:#fff;width:1200px}
+.box{position:absolute;border:2px solid #333;border-radius:8px;padding:8px 10px;text-align:center;font-size:14px;background:#f7f7f7;width:190px}
+.box b{display:block;margin-bottom:3px}
+.vk{background:#e5edf7;border-color:#4a76a8}.db{background:#f3ece2;border-color:#5b3a29}
+svg{position:absolute;left:0;top:0}
+.lbl{position:absolute;font-size:12.5px;color:#222;background:#fff;padding:0 3px}
+h3{position:absolute;left:20px;top:0;margin:10px 0;font-size:16px}
+</style></head><body><h3>Схема интеграции модуля бронирования с ВКонтакте</h3>
+<div style="position:relative;height:470px">
+<svg width="1200" height="470"><defs><marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z"/></marker></defs>
+<g stroke="#333" stroke-width="2" fill="none" marker-end="url(#a)">
+<line x1="235" y1="95" x2="415" y2="95"/>
+<line x1="415" y1="130" x2="235" y2="130"/>
+<line x1="530" y1="165" x2="530" y2="300"/>
+<line x1="645" y1="95" x2="935" y2="95"/>
+<line x1="1050" y1="140" x2="1050" y2="300"/>
+<line x1="935" y1="330" x2="650" y2="160" stroke-dasharray="7,5"/>
+</g></svg>
+<div class="box" style="left:20px;top:65px"><b>Гость</b>браузер, веб-форма брони (этап 3)</div>
+<div class="box" style="left:420px;top:60px"><b>Бэкенд Flask</b>REST API бронирования (этап 2), модуль vk_notify (этап 3)</div>
+<div class="box db" style="left:420px;top:305px"><b>БД SQLite</b>черновик по модели этапа 5: залы, столики, гости, брони</div>
+<div class="box vk" style="left:940px;top:55px"><b>VK API</b>api.vk.com/method/<br>messages.send, v=5.199</div>
+<div class="box vk" style="left:940px;top:305px"><b>Беседа администраторов</b>peer_id = 2000000000 + id беседы; кнопки «Подтвердить» / «Отклонить»</div>
+<div class="lbl" style="left:250px;top:72px">1. POST /api/bookings</div>
+<div class="lbl" style="left:250px;top:137px">5. ответ: заявка №N</div>
+<div class="lbl" style="left:540px;top:215px">2. проверка пересечений,<br>INSERT брони</div>
+<div class="lbl" style="left:665px;top:45px">3. messages.send (токен сообщества,<br>random_id, message, keyboard)</div>
+<div class="lbl" style="left:1060px;top:200px">4. сообщение<br>в беседу</div>
+<div class="lbl" style="left:770px;top:265px;width:150px;text-align:right">6. кнопка → событие<br>message_event<br>(Bots Long Poll)</div>
+<div class="lbl" style="left:690px;top:420px">7. бэкенд меняет статус брони в БД и отвечает sendMessageEventAnswer</div>
+</div></body></html>

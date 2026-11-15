@@ -8,3 +8,4 @@
 
 ## Структура
 - `PP.02/week1/` — анализ предметной области, ER-диаграмма (`er_diagram.png`, исходник `er.dot`), нормализация (`analysis.md`), отчёт (`report_week1.docx`).
+- `PP.11/stage1/` — этап 1 (ПП.11): сценарий бронирования, макеты страниц (`mockups/`), изучение VK API и схема интеграции (`analysis.md`, `vk_scheme.png`), отчёт (`report_stage1.docx`).

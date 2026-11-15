@@ -1,0 +1,24 @@
+body{font-family:"DejaVu Sans",Arial,sans-serif;margin:0;background:#f4f1ec;color:#222}
+header{background:#5b3a29;color:#fff;padding:14px 28px;font-size:20px;font-weight:bold}
+header span{font-weight:normal;font-size:14px;margin-left:18px;opacity:.85}
+main{padding:20px 28px}
+h2{margin:0 0 14px;font-size:20px}
+.steps{display:flex;gap:8px;margin-bottom:16px}
+.steps div{padding:6px 12px;border-radius:14px;background:#e3dbd2;font-size:13px}
+.steps .on{background:#5b3a29;color:#fff}
+.row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+label{display:block;font-size:13px;margin-bottom:4px;color:#555}
+.inp{background:#fff;border:1px solid #bbb;border-radius:6px;padding:8px 10px;min-width:150px;font-size:15px}
+.btn{background:#c0622f;color:#fff;border-radius:6px;padding:10px 18px;font-size:15px;display:inline-block}
+.btn.gray{background:#999}
+.hall{background:#fff;border:2px solid #5b3a29;border-radius:10px;position:relative;height:330px;width:640px}
+.t{position:absolute;border-radius:50%;width:70px;height:70px;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:13px;color:#fff}
+.t b{font-size:16px}
+.free{background:#4f9d5d}.busy{background:#b9b2aa}.sel{background:#c0622f;outline:4px solid #f1c27d}
+.legend{font-size:13px;margin-top:8px}.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 4px 0 12px;vertical-align:middle}
+.card{background:#fff;border-radius:10px;padding:18px 22px;width:560px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.card p{margin:6px 0}
+.ok{font-size:46px;color:#4f9d5d}
+.note{font-size:12px;color:#777}
+.side{display:flex;gap:20px}
+.err{color:#b3261e;font-size:13px}
