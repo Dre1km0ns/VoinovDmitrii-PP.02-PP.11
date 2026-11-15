@@ -1,0 +1,44 @@
+$ curl -s http://127.0.0.1:5000/api/halls
+[{"description":"Основной зал","id":1,"name":"Основной"},{"description":"Летняя веранда","id":2,"name":"Веранда"}]
+
+
+$ curl -s 'http://127.0.0.1:5000/api/tables/free?date=2026-11-20&start=19:00&end=21:00&guests=4'
+[{"capacity":4,"hall":"Основной","hall_id":1,"id":2,"number":2},{"capacity":4,"hall":"Основной","hall_id":1,"id":3,"number":3},{"capacity":6,"hall":"Основной","hall_id":1,"id":4,"number":4},{"capacity":4,"hall":"Основной","hall_id":1,"id":6,"number":6},{"capacity":4,"hall":"Веранда","hall_id":2,"id":8,"number":1},{"capacity":8,"hall":"Веранда","hall_id":2,"id":9,"number":2}]
+
+
+$ curl -s -X POST http://127.0.0.1:5000/api/bookings -H 'Content-Type: application/json' -d '{"name":"Иванов Иван","phone":"+7 900 123-45-67","table_id":3,"date":"2026-11-20","start":"19:00","end":"21:00","guests":4}'
+{"created_at":"2026-11-15T16:32:15","date":"2026-11-20","end":"21:00","guest":{"email":null,"name":"Иванов Иван","phone":"+79001234567"},"guests":4,"id":1,"start":"19:00","status":"new","table":{"capacity":4,"hall":"Основной","id":3,"number":3}}
+
+
+$ curl -s -w ' [HTTP %{http_code}]' -X POST http://127.0.0.1:5000/api/bookings -H 'Content-Type: application/json' -d '{"name":"Петров Пётр","phone":"+79005554433","table_id":3,"date":"2026-11-20","start":"20:30","end":"22:00","guests":2}'
+{"error":"Столик уже забронирован на это время"}
+ [HTTP 409]
+
+$ curl -s 'http://127.0.0.1:5000/api/tables/free?date=2026-11-20&start=19:00&end=21:00&guests=4'
+[{"capacity":4,"hall":"Основной","hall_id":1,"id":2,"number":2},{"capacity":6,"hall":"Основной","hall_id":1,"id":4,"number":4},{"capacity":4,"hall":"Основной","hall_id":1,"id":6,"number":6},{"capacity":4,"hall":"Веранда","hall_id":2,"id":8,"number":1},{"capacity":8,"hall":"Веранда","hall_id":2,"id":9,"number":2}]
+
+
+$ curl -s -w ' [HTTP %{http_code}]' -X POST http://127.0.0.1:5000/api/bookings -H 'Content-Type: application/json' -d '{"name":"Петров Пётр","phone":"+79005554433","table_id":3,"date":"2026-11-20","start":"21:00","end":"22:00","guests":2}'
+{"created_at":"2026-11-15T16:32:15","date":"2026-11-20","end":"22:00","guest":{"email":null,"name":"Петров Пётр","phone":"+79005554433"},"guests":2,"id":2,"start":"21:00","status":"new","table":{"capacity":4,"hall":"Основной","id":3,"number":3}}
+ [HTTP 201]
+
+$ curl -s -w ' [HTTP %{http_code}]' -X POST http://127.0.0.1:5000/api/bookings -H 'Content-Type: application/json' -d '{"name":"Сидоров","phone":"12345","table_id":1,"date":"2026-11-20","start":"19:00","end":"18:00","guests":2}'
+{"error":"Время окончания должно быть позже времени начала"}
+ [HTTP 400]
+
+$ curl -s -w ' [HTTP %{http_code}]' -X POST http://127.0.0.1:5000/api/bookings -H 'Content-Type: application/json' -d '{"name":"Сидоров С.","phone":"+79001112233","table_id":1,"date":"2026-11-20","start":"12:00","end":"13:00","guests":5}'
+{"error":"Столик рассчитан на 2 гостей"}
+ [HTTP 400]
+
+$ curl -s -X POST http://127.0.0.1:5000/api/bookings/1/cancel
+{"created_at":"2026-11-15T16:32:15","date":"2026-11-20","end":"21:00","guest":{"email":null,"name":"Иванов Иван","phone":"+79001234567"},"guests":4,"id":1,"start":"19:00","status":"cancelled","table":{"capacity":4,"hall":"Основной","id":3,"number":3}}
+
+
+$ curl -s -w ' [HTTP %{http_code}]' -X POST http://127.0.0.1:5000/api/bookings/1/cancel
+{"error":"Бронь в статусе cancelled нельзя отменить"}
+ [HTTP 409]
+
+$ curl -s 'http://127.0.0.1:5000/api/tables/free?date=2026-11-20&start=19:00&end=21:00&guests=4'
+[{"capacity":4,"hall":"Основной","hall_id":1,"id":2,"number":2},{"capacity":4,"hall":"Основной","hall_id":1,"id":3,"number":3},{"capacity":6,"hall":"Основной","hall_id":1,"id":4,"number":4},{"capacity":4,"hall":"Основной","hall_id":1,"id":6,"number":6},{"capacity":4,"hall":"Веранда","hall_id":2,"id":8,"number":1},{"capacity":8,"hall":"Веранда","hall_id":2,"id":9,"number":2}]
+
+

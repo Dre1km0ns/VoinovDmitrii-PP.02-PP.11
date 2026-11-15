@@ -9,3 +9,12 @@
 ## Структура
 - `PP.02/week1/` — анализ предметной области, ER-диаграмма (`er_diagram.png`, исходник `er.dot`), нормализация (`analysis.md`), отчёт (`report_week1.docx`).
 - `PP.11/stage1/` — этап 1 (ПП.11): сценарий бронирования, макеты страниц (`mockups/`), изучение VK API и схема интеграции (`analysis.md`, `vk_scheme.png`), отчёт (`report_stage1.docx`).
+- `PP.11/app/` — бэкенд модуля бронирования на Flask (этап 2): API свободных столиков, создания и отмены брони с проверкой пересечений; рабочий черновик таблиц `schema_draft.sql` по модели этапа 5.
+- `PP.11/stage2/` — этап 2 (ПП.11): описание бэкенда (`backend.md`), вывод проверки API (`api_demo.txt`), отчёт (`report_stage2.docx`).
+
+## Запуск бэкенда
+```
+cd PP.11/app
+pip install -r requirements.txt
+python app.py   # http://127.0.0.1:5000
+```
