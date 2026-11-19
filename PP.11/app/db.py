@@ -37,3 +37,32 @@ def init_db(path):
                           (1, 5, 2), (1, 6, 4), (1, 7, 2), (2, 1, 4), (2, 2, 8)])
         conn.execute("COMMIT")
     conn.close()
+
+
+def get_booking(conn, booking_id):
+    """Бронь с данными гостя, столика и зала (словарь) или None."""
+    r = conn.execute(
+        "SELECT b.id, b.date, b.time_start, b.time_end, b.guests_count, b.status, b.created_at, "
+        "g.full_name, g.phone, g.email, t.id AS table_id, t.number, t.capacity, h.name AS hall "
+        "FROM bookings b JOIN guests g ON g.id = b.guest_id "
+        "JOIN cafe_tables t ON t.id = b.table_id JOIN halls h ON h.id = t.hall_id "
+        "WHERE b.id = ?", (booking_id,)).fetchone()
+    if r is None:
+        return None
+    return {"id": r["id"], "date": r["date"], "start": r["time_start"], "end": r["time_end"],
+            "guests": r["guests_count"], "status": r["status"], "created_at": r["created_at"],
+            "guest": {"name": r["full_name"], "phone": r["phone"], "email": r["email"]},
+            "table": {"id": r["table_id"], "number": r["number"],
+                      "capacity": r["capacity"], "hall": r["hall"]}}
+
+
+def decide_booking(conn, booking_id, status):
+    """Решение администратора: перевести «новую» бронь в confirmed или rejected.
+
+    Возвращает True, если статус изменён; False, если бронь уже не «новая»
+    (например, её успел обработать другой администратор или гость отменил)."""
+    if status not in ("confirmed", "rejected"):
+        raise ValueError(status)
+    cur = conn.execute("UPDATE bookings SET status = ? WHERE id = ? AND status = 'new'",
+                       (status, booking_id))
+    return cur.rowcount == 1

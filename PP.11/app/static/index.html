@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бронирование столиков — кафе «Уют»</title>
+<link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header>Кафе «Уют» <span>Бронирование столиков</span></header>
+<main>
+  <div class="steps">
+    <div data-step="1">1. Дата и время</div><div data-step="2">2. Выбор столика</div>
+    <div data-step="3">3. Контакты</div><div data-step="4">4. Готово</div>
+  </div>
+  <div id="error" class="msg hidden"></div>
+
+  <!-- Шаг 1: дата, время, гости, зал -->
+  <section id="step1">
+    <h2>Когда вы хотите прийти?</h2>
+    <form id="searchForm" class="card">
+      <div class="row">
+        <div><label for="date">Дата</label><input class="inp" type="date" id="date" required></div>
+        <div><label for="start">Начало</label><input class="inp" type="time" id="start" value="19:00" required></div>
+        <div><label for="end">Окончание</label><input class="inp" type="time" id="end" value="21:00" required></div>
+      </div>
+      <div class="row">
+        <div><label for="guests">Гостей</label><input class="inp" type="number" id="guests" min="1" max="20" value="2" required></div>
+        <div><label for="hall">Зал</label><select class="inp" id="hall"></select></div>
+      </div>
+      <button class="btn" type="submit">Показать свободные столики</button>
+    </form>
+  </section>
+
+  <!-- Шаг 2: схема зала -->
+  <section id="step2" class="hidden">
+    <h2 id="hallHeader"></h2>
+    <div class="side">
+      <div>
+        <div class="hall" id="hallMap"></div>
+        <div class="legend"><i class="free"></i>свободен <i class="busy"></i>занят / мало мест <i class="sel"></i>выбран</div>
+      </div>
+      <div class="card" style="width:230px;height:fit-content">
+        <div id="tableInfo"><p>Выберите свободный столик на схеме.</p></div><br>
+        <button class="btn" id="toContacts" disabled>Продолжить</button><br><br>
+        <button class="btn gray" data-back="1">Назад</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Шаг 3: контакты -->
+  <section id="step3" class="hidden">
+    <h2>Контактные данные</h2>
+    <form id="contactForm" class="card" novalidate>
+      <p id="summary"></p>
+      <div class="field"><label for="name">ФИО</label><input class="inp" id="name" style="width:380px" required>
+        <span class="err" data-for="name"></span></div>
+      <div class="field"><label for="phone">Телефон</label><input class="inp" id="phone" placeholder="+7 900 123-45-67" required>
+        <span class="err" data-for="phone"></span></div>
+      <div class="field"><label for="email">Email (необязательно)</label><input class="inp" id="email" type="email"></div>
+      <button class="btn" type="submit" id="bookBtn">Забронировать</button>
+      <button class="btn gray" type="button" data-back="2">Назад</button>
+    </form>
+  </section>
+
+  <!-- Шаг 4: заявка принята -->
+  <section id="step4" class="hidden">
+    <div class="card">
+      <div class="ok">✔</div>
+      <h2 id="doneTitle"></h2>
+      <div id="doneInfo"></div>
+      <p class="note">Администратор получил заявку во ВКонтакте и подтвердит её в ближайшее время.</p>
+      <br><button class="btn" id="again">Новая бронь</button>
+    </div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body></html>

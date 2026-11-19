@@ -1,12 +1,18 @@
-"""ПП.11, этап 2. API бронирования столиков в кафе (Flask).
+"""ПП.11, этапы 2–3. API бронирования столиков в кафе (Flask) и веб-форма.
 
 Эндпоинты:
+  GET  /                                — веб-форма брони со схемой зала (этап 3)
   GET  /api/halls                       — залы
+  GET  /api/tables?hall_id=             — все столики зала для схемы (этап 3)
   GET  /api/tables/free                 — свободные столики на дату и интервал
   POST /api/bookings                    — создать бронь (с проверкой пересечений)
   GET  /api/bookings/<id>               — посмотреть бронь
   POST /api/bookings/<id>/cancel        — отменить бронь
+
+После создания брони данные отправляются в беседу администраторов ВКонтакте
+(модуль vk.py), кнопки «Подтвердить»/«Отклонить» обрабатывает vk_bot.py.
 """
+import logging
 import os
 import re
 from datetime import datetime
@@ -14,6 +20,9 @@ from datetime import datetime
 from flask import Flask, g, jsonify, request
 
 import db
+import vk
+
+log = logging.getLogger("app")
 
 ACTIVE = ("new", "confirmed")          # брони, которые занимают столик
 SITE_USER_ID = 1                       # служебный пользователь «сайт»
@@ -24,12 +33,30 @@ class ValidationError(Exception):
     pass
 
 
-def create_app(db_path=None):
-    app = Flask(__name__)
+def create_app(db_path=None, notifier=None):
+    """notifier — объект с методом send_booking(booking); по умолчанию берётся
+    из переменных окружения (VK_TOKEN, VK_PEER_ID), без них отправка отключена."""
+    app = Flask(__name__, static_folder="static", static_url_path="/static")
     app.config["DB_PATH"] = db_path or os.environ.get(
         "BOOKING_DB", os.path.join(db.BASE_DIR, "booking.sqlite"))
     app.json.ensure_ascii = False
     db.init_db(app.config["DB_PATH"])
+    if notifier is None:
+        notifier = vk.VkNotifier.from_env()
+        if notifier is None:
+            log.warning("ВКонтакте не настроен (нет VK_TOKEN или VK_PEER_ID): брони не пересылаются")
+
+    def notify_admins(booking):
+        """Переслать бронь в беседу администраторов. Ошибка ВК не отменяет бронь:
+        она уже сохранена со статусом «новая» (подробная обработка — этап 4)."""
+        if notifier is None:
+            return
+        try:
+            message_id = notifier.send_booking(booking)
+            log.info("Бронь №%s отправлена в беседу администраторов, сообщение ВК %s",
+                     booking["id"], message_id)
+        except vk.VkError as e:
+            log.error("Бронь №%s не отправлена в ВК: %s", booking["id"], e)
 
     def conn():
         if "conn" not in g:
@@ -85,25 +112,26 @@ def create_app(db_path=None):
             (table_id, date, *ACTIVE, end, start)).fetchone()
         return row is not None
 
-    def booking_json(c, booking_id):
-        r = c.execute(
-            "SELECT b.id, b.date, b.time_start, b.time_end, b.guests_count, b.status, b.created_at, "
-            "g.full_name, g.phone, g.email, t.id AS table_id, t.number, t.capacity, h.name AS hall "
-            "FROM bookings b JOIN guests g ON g.id = b.guest_id "
-            "JOIN cafe_tables t ON t.id = b.table_id JOIN halls h ON h.id = t.hall_id "
-            "WHERE b.id = ?", (booking_id,)).fetchone()
-        if r is None:
-            return None
-        return {"id": r["id"], "date": r["date"], "start": r["time_start"], "end": r["time_end"],
-                "guests": r["guests_count"], "status": r["status"], "created_at": r["created_at"],
-                "guest": {"name": r["full_name"], "phone": r["phone"], "email": r["email"]},
-                "table": {"id": r["table_id"], "number": r["number"],
-                          "capacity": r["capacity"], "hall": r["hall"]}}
-
     # ---------- эндпоинты ----------
+    @app.get("/")
+    def index():
+        return app.send_static_file("index.html")
+
     @app.get("/api/halls")
     def halls():
         rows = conn().execute("SELECT id, name, description FROM halls ORDER BY id").fetchall()
+        return jsonify([dict(r) for r in rows])
+
+    @app.get("/api/tables")
+    def all_tables():
+        """Все столики (для схемы зала); hall_id необязателен."""
+        sql = ("SELECT t.id, t.number, t.capacity, h.id AS hall_id, h.name AS hall "
+               "FROM cafe_tables t JOIN halls h ON h.id = t.hall_id")
+        params = []
+        if request.args.get("hall_id"):
+            sql += " WHERE h.id = ?"
+            params.append(request.args.get("hall_id"))
+        rows = conn().execute(sql + " ORDER BY h.id, t.number", params).fetchall()
         return jsonify([dict(r) for r in rows])
 
     @app.get("/api/tables/free")
@@ -172,11 +200,13 @@ def create_app(db_path=None):
         except Exception:
             c.execute("ROLLBACK")
             raise
-        return jsonify(booking_json(c, booking_id)), 201
+        booking = db.get_booking(c, booking_id)
+        notify_admins(booking)
+        return jsonify(booking), 201
 
     @app.get("/api/bookings/<int:booking_id>")
     def get_booking(booking_id):
-        b = booking_json(conn(), booking_id)
+        b = db.get_booking(conn(), booking_id)
         if b is None:
             return jsonify(error="Бронь не найдена"), 404
         return jsonify(b)
@@ -191,10 +221,11 @@ def create_app(db_path=None):
             return jsonify(error=f"Бронь в статусе {row['status']} нельзя отменить"), 409
         c.execute("UPDATE bookings SET status = 'cancelled' WHERE id = ? AND status IN (?, ?)",
                   (booking_id, *ACTIVE))
-        return jsonify(booking_json(c, booking_id))
+        return jsonify(db.get_booking(c, booking_id))
 
     return app
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
     create_app().run(debug=False, port=int(os.environ.get("PORT", 5000)))

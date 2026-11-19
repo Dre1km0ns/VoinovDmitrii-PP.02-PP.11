@@ -1,0 +1,33 @@
+$ cd PP.11/app && python -m unittest discover -s tests -v
+test_empty_token (test_vk.ApiTests.test_empty_token) ... ok
+test_from_env (test_vk.ApiTests.test_from_env) ... ok
+test_gives_up_after_attempts (test_vk.ApiTests.test_gives_up_after_attempts) ... messages.send: VK API 9: Flood control, повтор 1 из 2
+messages.send: VK API 9: Flood control, повтор 2 из 2
+ok
+test_no_retry_on_auth_error (test_vk.ApiTests.test_no_retry_on_auth_error) ... ok
+test_retry_keeps_random_id (test_vk.ApiTests.test_retry_keeps_random_id) ... messages.send: VK API 10: Internal server error, повтор 1 из 2
+messages.send: VK API network: ConnectionError, повтор 2 из 2
+ok
+test_send_params (test_vk.ApiTests.test_send_params) ... ok
+test_token_not_in_url_or_repr (test_vk.ApiTests.test_token_not_in_url_or_repr) ... ok
+test_new_booking_is_sent (test_vk.AppIntegrationTests.test_new_booking_is_sent) ... ok
+test_rejected_booking_not_sent (test_vk.AppIntegrationTests.test_rejected_booking_not_sent) ... ok
+test_tables_and_form (test_vk.AppIntegrationTests.test_tables_and_form) ... ok
+test_vk_error_keeps_booking (test_vk.AppIntegrationTests.test_vk_error_keeps_booking) ... ok
+test_confirm (test_vk.BotTests.test_confirm) ... ok
+test_long_poll_loop (test_vk.BotTests.test_long_poll_loop)
+Цикл Long Poll: получение сервера, событие message_event, обновление ts. ... ok
+test_other_chat_ignored (test_vk.BotTests.test_other_chat_ignored) ... ok
+test_payload_as_string (test_vk.BotTests.test_payload_as_string) ... ok
+test_reject_frees_table (test_vk.BotTests.test_reject_frees_table) ... ok
+test_second_press_does_not_change (test_vk.BotTests.test_second_press_does_not_change) ... ok
+test_unknown_booking_and_button (test_vk.BotTests.test_unknown_booking_and_button) ... ok
+test_keyboard (test_vk.FormatTests.test_keyboard) ... ok
+test_message_text (test_vk.FormatTests.test_message_text) ... ok
+test_message_with_email_and_prefix (test_vk.FormatTests.test_message_with_email_and_prefix) ... ok
+test_seats_word (test_vk.FormatTests.test_seats_word) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.127s
+
+OK

@@ -11,10 +11,22 @@
 - `PP.11/stage1/` — этап 1 (ПП.11): сценарий бронирования, макеты страниц (`mockups/`), изучение VK API и схема интеграции (`analysis.md`, `vk_scheme.png`), отчёт (`report_stage1.docx`).
 - `PP.11/app/` — бэкенд модуля бронирования на Flask (этап 2): API свободных столиков, создания и отмены брони с проверкой пересечений; рабочий черновик таблиц `schema_draft.sql` по модели этапа 5.
 - `PP.11/stage2/` — этап 2 (ПП.11): описание бэкенда (`backend.md`), вывод проверки API (`api_demo.txt`), отчёт (`report_stage2.docx`).
+- `PP.11/app/static/`, `vk.py`, `vk_bot.py`, `tests/` — этап 3: веб-форма брони со схемой зала, пересылка брони в беседу администраторов ВКонтакте с кнопками «Подтвердить»/«Отклонить», модульные тесты.
+- `PP.11/stage3/` — этап 3 (ПП.11): описание (`frontend_vk.md`), снимки экрана (`screens/`), вывод тестов (`tests_output.txt`) и проверки в ВК (`vk_demo.txt`), отчёт (`report_stage3.docx`).
 
 ## Запуск бэкенда
 ```
 cd PP.11/app
 pip install -r requirements.txt
 python app.py   # http://127.0.0.1:5000
+```
+
+## Пересылка в ВКонтакте (этап 3)
+```
+cd PP.11/app
+cp .env.example .env          # вписать VK_TOKEN, VK_GROUP_ID, VK_PEER_ID; .env не коммитится
+set -a; . ./.env; set +a
+python app.py                 # веб-форма и API
+python vk_bot.py              # обработка кнопок «Подтвердить»/«Отклонить»
+python -m unittest discover -s tests -v
 ```
