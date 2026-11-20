@@ -36,17 +36,30 @@
 | cafe_backup | вход | резервное копирование: только чтение (встроенная роль pg_read_all_data) |
 
 ```
--- Групповые роли (без входа) — соответствуют ролям предметной области
-CREATE ROLE cafe_admin   NOLOGIN;   -- администратор: справочники, пользователи, все брони
-CREATE ROLE cafe_manager NOLOGIN;   -- менеджер: гости и брони, смена статуса
-CREATE ROLE cafe_guest   NOLOGIN;   -- гость (сайт): только просмотр залов и бронирование через функции
+-- Роли — общие объекты кластера PostgreSQL: создаются, только если их ещё нет;
+-- при повторном запуске пароли обновляются, права в базе выдаются заново
+-- (права на объекты схемы cafe удаляются вместе со схемой в 01_schema.sql).
+SELECT format('CREATE ROLE %I NOLOGIN', r)
+FROM unnest(ARRAY['cafe_admin', 'cafe_manager', 'cafe_guest']) AS r
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) \gexec
+SELECT format('CREATE ROLE %I LOGIN', r)
+FROM unnest(ARRAY['cafe_admin_ivanova', 'cafe_manager_petrov', 'cafe_web', 'cafe_backup']) AS r
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) \gexec
+-- Групповые роли (без входа) — соответствуют ролям предметной области:
+--   cafe_admin   — администратор: справочники, пользователи, все брони
+--   cafe_manager — менеджер: гости и брони, смена статуса
+--   cafe_guest   — гость (сайт): только просмотр залов и бронирование через функции
 -- Учётные записи входа; пароли хранятся в PostgreSQL как SCRAM-SHA-256
 SET password_encryption = 'scram-sha-256';
-CREATE ROLE cafe_admin_ivanova  LOGIN PASSWORD :'admin_pw'   IN ROLE cafe_admin;
-CREATE ROLE cafe_manager_petrov LOGIN PASSWORD :'manager_pw' IN ROLE cafe_manager;
-CREATE ROLE cafe_web            LOGIN PASSWORD :'web_pw'     IN ROLE cafe_guest CONNECTION LIMIT 20;
+ALTER ROLE cafe_admin_ivanova  LOGIN PASSWORD :'admin_pw';
+ALTER ROLE cafe_manager_petrov LOGIN PASSWORD :'manager_pw';
+ALTER ROLE cafe_web            LOGIN PASSWORD :'web_pw' CONNECTION LIMIT 20;
+ALTER ROLE cafe_backup         LOGIN PASSWORD :'backup_pw';
+GRANT cafe_admin   TO cafe_admin_ivanova;
+GRANT cafe_manager TO cafe_manager_petrov;
+GRANT cafe_guest   TO cafe_web;
 -- Резервное копирование: только чтение всех данных (встроенная роль pg_read_all_data)
-CREATE ROLE cafe_backup         LOGIN PASSWORD :'backup_pw'  IN ROLE pg_read_all_data;
+GRANT pg_read_all_data TO cafe_backup;
 ```
 
 **Таблица 2.2 — Права ролей**

@@ -71,8 +71,8 @@
   ЗАПРЕЩЕНО  слабый пароль 'qwerty': ERROR:  Пароль должен быть не короче 8 символов и содержать буквы и цифры
   Хранится (выведено владельцем базы):
     site              !…                              длина 1
-    admin.ivanova     $2a$10$TvQVEIr10xf8.E0ZLG0aqO…  длина 60
-    manager.petrov    $2a$10$QiXLk5LhGkhFL0i0fpyFDO…  длина 60
+    admin.ivanova     $2a$10$3wPQwSAkjXWlDzMySW304u…  длина 60
+    manager.petrov    $2a$10$izJoDCUMGLu8O4y.LaYBn.…  длина 60
     manager.sidorova  !…                              длина 1
   Открытого пароля в хеше нет: True
   РАЗРЕШЕНО  вход manager.petrov с верным паролем: 1 строк
@@ -82,14 +82,14 @@
   ЗАПРЕЩЕНО  записать пароль открытым текстом: ERROR:  new row for relation "users" violates check constraint "ck_users_password_bcrypt"
 
 === 7. Журнал аудита (последние записи) ===
-  №1   00:08:06 cafe_admin_ivanova   INSERT halls       id=4   id: 4, name: Терраса, description: тест
-  №2   00:08:06 cafe_admin_ivanova   UPDATE halls       id=4   description: тест → Летняя терраса
-  №3   00:08:06 cafe_admin_ivanova   DELETE halls       id=4   id: 4, name: Терраса, description: Летняя терраса
-  №4   00:08:06 cafe_manager_petrov  UPDATE bookings    id=1   status: new → confirmed
-  №5   00:08:06 cafe_manager_petrov  INSERT guests      id=11  id: 11, email: None, phone: +79990000001, full_name: Новый Гость
-  №6   00:08:06 cafe_web             INSERT guests      id=12  id: 12, email: None, phone: +79990000002, full_name: Гость Сайта
-  №7   00:08:06 cafe_web             INSERT bookings    id=16  id: 16, status: new, user_id: 1, guest_id: 12, table_id: 3, time_end: 21:00:0…
-  №8   00:08:06 cafe_admin_ivanova   UPDATE users       id=2   password_hash: *** → *** (изменён)
-  №9   00:08:06 cafe_admin_ivanova   UPDATE users       id=3   password_hash: *** → *** (изменён)
+  №1   00:12:43 cafe_admin_ivanova   INSERT halls       id=4   id: 4, name: Терраса, description: тест
+  №2   00:12:43 cafe_admin_ivanova   UPDATE halls       id=4   description: тест → Летняя терраса
+  №3   00:12:43 cafe_admin_ivanova   DELETE halls       id=4   id: 4, name: Терраса, description: Летняя терраса
+  №4   00:12:43 cafe_manager_petrov  UPDATE bookings    id=1   status: new → confirmed
+  №5   00:12:43 cafe_manager_petrov  INSERT guests      id=11  id: 11, email: None, phone: +79990000001, full_name: Новый Гость
+  №6   00:12:43 cafe_web             INSERT guests      id=12  id: 12, email: None, phone: +79990000002, full_name: Гость Сайта
+  №7   00:12:43 cafe_web             INSERT bookings    id=16  id: 16, status: new, user_id: 1, guest_id: 12, table_id: 3, time_end: 21:00:0…
+  №8   00:12:43 cafe_admin_ivanova   UPDATE users       id=2   password_hash: *** → *** (изменён)
+  №9   00:12:43 cafe_admin_ivanova   UPDATE users       id=3   password_hash: *** → *** (изменён)
   ЗАПРЕЩЕНО  владелец базы удаляет записи журнала: ERROR:  Журнал аудита нельзя изменять или удалять
   ЗАПРЕЩЕНО  владелец базы очищает журнал: ERROR:  Журнал аудита нельзя изменять или удалять
