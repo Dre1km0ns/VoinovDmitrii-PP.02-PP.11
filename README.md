@@ -8,6 +8,7 @@
 
 ## Структура
 - `PP.02/week1/` — анализ предметной области, ER-диаграмма (`er_diagram.png`, исходник `er.dot`), нормализация (`analysis.md`), отчёт (`report_week1.docx`).
+- `PP.02/week2/` — неделя 2 = этап 6 (ПП.02): SQL-скрипт базы данных на PostgreSQL (`01_schema.sql` — таблицы, ключи, ограничения, индексы; `02_test_data.sql` — тестовые данные), проверка (`check_db.sql`, `check_output.txt`), схема таблиц (`schema.png`), отчёт (`report_week2.docx`).
 - `PP.11/stage1/` — этап 1 (ПП.11): сценарий бронирования, макеты страниц (`mockups/`), изучение VK API и схема интеграции (`analysis.md`, `vk_scheme.png`), отчёт (`report_stage1.docx`).
 - `PP.11/app/` — бэкенд модуля бронирования на Flask (этап 2): API свободных столиков, создания и отмены брони с проверкой пересечений; рабочий черновик таблиц `schema_draft.sql` по модели этапа 5.
 - `PP.11/stage2/` — этап 2 (ПП.11): описание бэкенда (`backend.md`), вывод проверки API (`api_demo.txt`), отчёт (`report_stage2.docx`).
@@ -30,4 +31,11 @@ set -a; . ./.env; set +a
 python app.py                 # веб-форма и API
 python vk_bot.py              # обработка кнопок «Подтвердить»/«Отклонить»
 python -m pytest -v tests     # 79 тестов, VK API заменён заглушкой (этап 4)
+```
+
+## База данных ПП.02 (PostgreSQL 15+)
+```
+cd PP.02
+createdb cafe_booking
+psql -d cafe_booking -v ON_ERROR_STOP=1 -f week2/01_schema.sql -f week2/02_test_data.sql
 ```
