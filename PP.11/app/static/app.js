@@ -1,4 +1,4 @@
-// ПП.11, этап 3. Веб-форма брони: шаги «дата и время» → «схема зала» → «контакты» → «готово».
+// ПП.11, этапы 3–4. Веб-форма брони: шаги «дата и время» → «схема зала» → «контакты» → «готово».
 // Данные берутся из API бэкенда (этап 2), бронь создаётся запросом POST /api/bookings.
 const $ = (id) => document.getElementById(id);
 const state = { query: null, hall: null, table: null };
@@ -14,7 +14,9 @@ function showError(text) {
 }
 
 async function api(url, options) {
-  const resp = await fetch(url, options);
+  let resp;
+  try { resp = await fetch(url, options); }
+  catch (e) { throw Object.assign(new Error("Сервер недоступен. Проверьте соединение и попробуйте ещё раз"), { status: 0 }); }
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) throw Object.assign(new Error(data.error || "Ошибка сервера"), { status: resp.status });
   return data;

@@ -1,4 +1,4 @@
-"""ПП.11, этап 3. Пересылка данных о брони в беседу администраторов ВКонтакте.
+"""ПП.11, этапы 3–4. Пересылка данных о брони в беседу администраторов ВКонтакте.
 
 Токен сообщества берётся только из переменной окружения VK_TOKEN и никуда
 не записывается: ни в код, ни в журнал, ни в ответы API.
@@ -33,7 +33,8 @@ class VkError(Exception):
 class VkApi:
     """Минимальный клиент VK API для токена сообщества."""
 
-    def __init__(self, token, host=DEFAULT_HOST, session=None, attempts=3, sleep=time.sleep):
+    def __init__(self, token, host=DEFAULT_HOST, session=None, attempts=3, sleep=time.sleep,
+                 timeout=10):
         if not token:
             raise ValueError("Не задан токен сообщества (VK_TOKEN)")
         self._token = token
@@ -41,26 +42,31 @@ class VkApi:
         self.session = session or requests.Session()
         self.attempts = attempts
         self.sleep = sleep
+        self.timeout = timeout                # секунд на один запрос (этап 4)
 
     def __repr__(self):                       # токен не выводится даже при отладке
         return f"VkApi(base={self.base!r}, token=***)"
 
     def call(self, method, **params):
-        """Вызов метода. Временные ошибки (6, 9, 10, сбой сети) повторяются с паузой."""
+        """Вызов метода. Временные ошибки (6, 9, 10, сбой сети, тайм-аут, ответ не JSON)
+        повторяются с паузой; после последней попытки выбрасывается VkError."""
         data = {k: v for k, v in params.items() if v is not None}
         data.update(access_token=self._token, v=API_VERSION)
         for attempt in range(1, self.attempts + 1):
             try:
-                resp = self.session.post(self.base + method, data=data, timeout=10)
+                resp = self.session.post(self.base + method, data=data, timeout=self.timeout)
                 body = resp.json()
             except (requests.RequestException, ValueError) as e:
                 err = VkError("network", type(e).__name__)
             else:
-                if "error" not in body:
+                if not isinstance(body, dict) or ("response" not in body and "error" not in body):
+                    err = VkError("network", "неожиданный ответ сервера")
+                elif "error" not in body:
                     return body["response"]
-                err = VkError(body["error"].get("error_code"), body["error"].get("error_msg", ""))
-                if err.code not in RETRY_CODES:
-                    raise err
+                else:
+                    err = VkError(body["error"].get("error_code"), body["error"].get("error_msg", ""))
+                    if err.code not in RETRY_CODES:
+                        raise err
             if attempt == self.attempts:
                 raise err
             log.warning("%s: %s, повтор %d из %d", method, err, attempt, self.attempts - 1)
@@ -122,7 +128,8 @@ class VkNotifier:
         """Создать по переменным окружения; None, если ВК не настроен."""
         if not env.get("VK_TOKEN") or not env.get("VK_PEER_ID"):
             return None
-        api = VkApi(env["VK_TOKEN"], host=env.get("VK_API_HOST", DEFAULT_HOST))
+        api = VkApi(env["VK_TOKEN"], host=env.get("VK_API_HOST", DEFAULT_HOST),
+                    timeout=float(env.get("VK_TIMEOUT", 10)))
         return cls(api, env["VK_PEER_ID"], env.get("VK_MESSAGE_PREFIX", ""))
 
     def send_booking(self, booking):

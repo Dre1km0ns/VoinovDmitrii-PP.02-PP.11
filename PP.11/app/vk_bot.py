@@ -1,4 +1,4 @@
-"""ПП.11, этап 3. Обработка кнопок «Подтвердить»/«Отклонить» в беседе администраторов.
+"""ПП.11, этапы 3–4. Обработка кнопок «Подтвердить»/«Отклонить» в беседе администраторов.
 
 Работает через Bots Long Poll API: ждёт события message_event (нажатие
 callback-кнопки), меняет статус брони в базе, дописывает в сообщение, кто
@@ -10,6 +10,8 @@ callback-кнопки), меняет статус брони в базе, доп
 import json
 import logging
 import os
+import sqlite3
+import time
 
 import requests
 
@@ -85,8 +87,13 @@ class BookingBot:
         self.answer(event, f"Бронь №{booking_id} {vk.STATUS_RU[status]}")
         return f"бронь №{booking_id} → {status} ({who})"
 
-    def run(self, group_id, session=None, stop=lambda: False):
-        """Цикл Bots Long Poll. Ключ сервера, как и токен, в журнал не выводится."""
+    def run(self, group_id, session=None, stop=lambda: False, sleep=time.sleep):
+        """Цикл Bots Long Poll. Ключ сервера, как и токен, в журнал не выводится.
+
+        Этап 4: сбои сети и ВК не останавливают бота — он пишет предупреждение,
+        делает паузу и продолжает. Ошибка при первом получении сервера (например,
+        15 «нет доступа» у ключа без права «Управление сообществом») выбрасывается
+        сразу, потому что без неё бот работать не может."""
         session = session or requests.Session()
         server = self.api.call("groups.getLongPollServer", group_id=group_id)
         log.info("Бот запущен, ожидаю нажатия кнопок")
@@ -96,15 +103,20 @@ class BookingBot:
                     "act": "a_check", "key": server["key"], "ts": server["ts"], "wait": 25},
                     timeout=35).json()
             except (requests.RequestException, ValueError) as e:
-                log.warning("Long Poll недоступен: %s", type(e).__name__)
+                log.warning("Long Poll недоступен: %s, повтор через 3 с", type(e).__name__)
+                sleep(3)
                 continue
             if "failed" in r:
                 if r["failed"] == 1:
                     server["ts"] = r["ts"]
                 else:                          # ключ устарел — получить новый
-                    server = self.api.call("groups.getLongPollServer", group_id=group_id)
+                    try:
+                        server = self.api.call("groups.getLongPollServer", group_id=group_id)
+                    except vk.VkError as e:
+                        log.warning("Не удалось обновить сервер Long Poll: %s, повтор через 3 с", e)
+                        sleep(3)
                 continue
-            server["ts"] = r["ts"]
+            server["ts"] = r.get("ts", server["ts"])
             for upd in r.get("updates", []):
                 if upd.get("type") != "message_event":
                     continue
@@ -112,6 +124,8 @@ class BookingBot:
                     log.info("Кнопка: %s", self.handle_event(upd["object"]))
                 except vk.VkError as e:
                     log.error("Ошибка ВК при обработке кнопки: %s", e)
+                except sqlite3.Error as e:
+                    log.error("Ошибка базы данных при обработке кнопки: %s", e)
 
 
 if __name__ == "__main__":

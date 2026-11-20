@@ -1,4 +1,4 @@
-"""ПП.11, этапы 2–3. API бронирования столиков в кафе (Flask) и веб-форма.
+"""ПП.11, этапы 2–4. API бронирования столиков в кафе (Flask) и веб-форма.
 
 Эндпоинты:
   GET  /                                — веб-форма брони со схемой зала (этап 3)
@@ -15,7 +15,7 @@
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import date as date_cls, datetime
 
 from flask import Flask, g, jsonify, request
 
@@ -27,6 +27,10 @@ log = logging.getLogger("app")
 ACTIVE = ("new", "confirmed")          # брони, которые занимают столик
 SITE_USER_ID = 1                       # служебный пользователь «сайт»
 PHONE_RE = re.compile(r"^\+7\d{10}$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+NAME_MAX = 100                         # длина ФИО
+EMAIL_MAX = 100
+GUESTS_MAX = 50                        # больше гостей — заведомо ошибка ввода
 
 
 class ValidationError(Exception):
@@ -47,16 +51,23 @@ def create_app(db_path=None, notifier=None):
             log.warning("ВКонтакте не настроен (нет VK_TOKEN или VK_PEER_ID): брони не пересылаются")
 
     def notify_admins(booking):
-        """Переслать бронь в беседу администраторов. Ошибка ВК не отменяет бронь:
-        она уже сохранена со статусом «новая» (подробная обработка — этап 4)."""
+        """Переслать бронь в беседу администраторов. Возвращает True, если сообщение
+        отправлено. Любая ошибка ВК (недоступен, тайм-аут, неверный токен, ответ не JSON
+        и т. п.) не отменяет бронь: она уже сохранена со статусом «новая», ошибка
+        пишется в журнал, а гость получает обычный ответ 201."""
         if notifier is None:
-            return
+            return False
         try:
             message_id = notifier.send_booking(booking)
-            log.info("Бронь №%s отправлена в беседу администраторов, сообщение ВК %s",
-                     booking["id"], message_id)
         except vk.VkError as e:
             log.error("Бронь №%s не отправлена в ВК: %s", booking["id"], e)
+            return False
+        except Exception:                              # непредвиденная ошибка модуля ВК
+            log.exception("Бронь №%s не отправлена в ВК: непредвиденная ошибка", booking["id"])
+            return False
+        log.info("Бронь №%s отправлена в беседу администраторов, сообщение ВК %s",
+                 booking["id"], message_id)
+        return True
 
     def conn():
         if "conn" not in g:
@@ -73,16 +84,34 @@ def create_app(db_path=None, notifier=None):
     def bad_request(e):
         return jsonify(error=str(e)), 400
 
+    # Ошибки HTTP и непредвиденные ошибки сервера отдаются в JSON, а не HTML-страницей,
+    # чтобы веб-форма могла показать понятный текст.
+    @app.errorhandler(404)
+    def not_found(_e):
+        return jsonify(error="Не найдено"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(_e):
+        return jsonify(error="Метод не поддерживается"), 405
+
+    @app.errorhandler(500)
+    def server_error(_e):
+        log.exception("Внутренняя ошибка сервера")
+        return jsonify(error="Внутренняя ошибка сервера, попробуйте позже"), 500
+
     # ---------- проверка входных данных ----------
     def parse_date(value):
         try:
-            return datetime.strptime(value or "", "%Y-%m-%d").date().isoformat()
+            d = datetime.strptime(str(value or ""), "%Y-%m-%d").date()
         except ValueError:
             raise ValidationError("Дата должна быть в формате ГГГГ-ММ-ДД")
+        if d < date_cls.today():
+            raise ValidationError("Нельзя забронировать столик на прошедшую дату")
+        return d.isoformat()
 
     def parse_time(value, name):
         try:
-            return datetime.strptime(value or "", "%H:%M").strftime("%H:%M")
+            return datetime.strptime(str(value or ""), "%H:%M").strftime("%H:%M")
         except ValueError:
             raise ValidationError(f"Поле {name} должно быть в формате ЧЧ:ММ")
 
@@ -94,14 +123,30 @@ def create_app(db_path=None, notifier=None):
             raise ValidationError("Время окончания должно быть позже времени начала")
         return date, start, end
 
+    def parse_int(value):
+        """Целое число из запроса; дробные, логические и строки с буквами не принимаются."""
+        if isinstance(value, bool) or isinstance(value, float):
+            raise ValueError(value)
+        return int(value)
+
     def parse_guests(value):
         try:
-            n = int(value)
+            n = parse_int(value)
         except (TypeError, ValueError):
             raise ValidationError("Количество гостей должно быть целым числом")
         if n <= 0:
             raise ValidationError("Количество гостей должно быть больше нуля")
+        if n > GUESTS_MAX:
+            raise ValidationError(f"Количество гостей не может быть больше {GUESTS_MAX}")
         return n
+
+    def parse_hall(args):
+        if not args.get("hall_id"):
+            return None
+        try:
+            return parse_int(args.get("hall_id"))
+        except ValueError:
+            raise ValidationError("Номер зала должен быть целым числом")
 
     # ---------- проверка пересечения по времени ----------
     def has_overlap(c, table_id, date, start, end):
@@ -128,9 +173,10 @@ def create_app(db_path=None, notifier=None):
         sql = ("SELECT t.id, t.number, t.capacity, h.id AS hall_id, h.name AS hall "
                "FROM cafe_tables t JOIN halls h ON h.id = t.hall_id")
         params = []
-        if request.args.get("hall_id"):
+        hall_id = parse_hall(request.args)
+        if hall_id is not None:
             sql += " WHERE h.id = ?"
-            params.append(request.args.get("hall_id"))
+            params.append(hall_id)
         rows = conn().execute(sql + " ORDER BY h.id, t.number", params).fetchall()
         return jsonify([dict(r) for r in rows])
 
@@ -144,9 +190,10 @@ def create_app(db_path=None, notifier=None):
                "  SELECT 1 FROM bookings b WHERE b.table_id = t.id AND b.date = ? "
                "  AND b.status IN (?, ?) AND b.time_start < ? AND ? < b.time_end)")
         params = [guests, date, *ACTIVE, end, start]
-        if request.args.get("hall_id"):
+        hall_id = parse_hall(request.args)
+        if hall_id is not None:
             sql += " AND h.id = ?"
-            params.append(request.args.get("hall_id"))
+            params.append(hall_id)
         rows = conn().execute(sql + " ORDER BY h.id, t.number", params).fetchall()
         return jsonify([dict(r) for r in rows])
 
@@ -157,15 +204,19 @@ def create_app(db_path=None, notifier=None):
             raise ValidationError("Ожидается JSON-объект")
         date, start, end = parse_interval(data)
         guests = parse_guests(data.get("guests"))
-        name = (data.get("name") or "").strip()
-        phone = re.sub(r"[\s()-]", "", data.get("phone") or "")
-        email = (data.get("email") or "").strip() or None
+        name = str(data.get("name") or "").strip()
+        phone = re.sub(r"[\s()-]", "", str(data.get("phone") or ""))
+        email = str(data.get("email") or "").strip() or None
         if not name:
             raise ValidationError("Укажите ФИО")
+        if len(name) > NAME_MAX:
+            raise ValidationError(f"ФИО не должно быть длиннее {NAME_MAX} символов")
         if not PHONE_RE.match(phone):
             raise ValidationError("Телефон должен быть в формате +7XXXXXXXXXX")
+        if email is not None and (len(email) > EMAIL_MAX or not EMAIL_RE.match(email)):
+            raise ValidationError("Email указан неверно")
         try:
-            table_id = int(data.get("table_id"))
+            table_id = parse_int(data.get("table_id"))
         except (TypeError, ValueError):
             raise ValidationError("Не указан столик")
 
@@ -201,7 +252,7 @@ def create_app(db_path=None, notifier=None):
             c.execute("ROLLBACK")
             raise
         booking = db.get_booking(c, booking_id)
-        notify_admins(booking)
+        booking["notified"] = notify_admins(booking)   # дошло ли сообщение до беседы ВК
         return jsonify(booking), 201
 
     @app.get("/api/bookings/<int:booking_id>")

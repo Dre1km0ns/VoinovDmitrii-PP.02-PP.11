@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import date, timedelta
 
 import requests
 
@@ -14,6 +15,7 @@ import vk                  # noqa: E402
 import vk_bot              # noqa: E402
 
 TOKEN = "fake-token-for-tests"
+DAY = (date.today() + timedelta(days=7)).isoformat()   # бронь всегда на будущую дату (этап 4)
 BOOKING = {"id": 17, "date": "2026-11-20", "start": "19:00", "end": "21:00", "guests": 4,
            "status": "new", "created_at": "2026-11-19T12:00:00",
            "guest": {"name": "Иванов Иван", "phone": "+79001234567", "email": None},
@@ -163,7 +165,7 @@ class AppIntegrationTests(unittest.TestCase):
         return app_module.create_app(self.db_path, notifier=notifier).test_client()
 
     def book(self, client, **kw):
-        data = dict(name="Иванов Иван", phone="+79001234567", table_id=3, date="2026-11-20",
+        data = dict(name="Иванов Иван", phone="+79001234567", table_id=3, date=DAY,
                     start="19:00", end="21:00", guests=4, **kw)
         return client.post("/api/bookings", json=data)
 
@@ -208,7 +210,7 @@ class BotTests(unittest.TestCase):
         self.db_path = os.path.join(self.tmp.name, "test.sqlite")
         c = app_module.create_app(self.db_path, notifier=RecordingNotifier()).test_client()
         self.booking_id = c.post("/api/bookings", json=dict(
-            name="Иванов Иван", phone="+79001234567", table_id=3, date="2026-11-20",
+            name="Иванов Иван", phone="+79001234567", table_id=3, date=DAY,
             start="19:00", end="21:00", guests=4)).get_json()["id"]
         self.api = FakeApi()
         self.bot = vk_bot.BookingBot(self.api, self.db_path, self.PEER)
@@ -244,7 +246,7 @@ class BotTests(unittest.TestCase):
         self.bot.handle_event(self.event("reject"))
         self.assertEqual(self.status(), "rejected")
         c = app_module.create_app(self.db_path, notifier=RecordingNotifier()).test_client()
-        free = c.get("/api/tables/free?date=2026-11-20&start=19:00&end=21:00&guests=4").get_json()
+        free = c.get(f"/api/tables/free?date={DAY}&start=19:00&end=21:00&guests=4").get_json()
         self.assertIn(3, [t["id"] for t in free])
 
     def test_second_press_does_not_change(self):

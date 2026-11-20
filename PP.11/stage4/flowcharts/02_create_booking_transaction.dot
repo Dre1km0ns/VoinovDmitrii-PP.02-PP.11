@@ -1,0 +1,44 @@
+digraph G {
+  graph [fontname="DejaVu Sans", nodesep=0.22, ranksep=0.28, splines=ortho, newrank=true];
+  node  [fontname="DejaVu Sans", fontsize=13, shape=box, width=1.2, margin="0.08,0.04"];
+  edge  [fontname="DejaVu Sans", fontsize=10, arrowsize=0.7];
+
+  a [shape=box, style="rounded", peripheries=1, label="Данные проверены\n(рисунок 1)", group="main"];
+  p4 [shape=box, label="BEGIN IMMEDIATE\nSELECT столик\nпо table_id", group="main"];
+  d7 [shape=diamond, margin=0.01, label="Столик\nнайден?", group="main"];
+  e2 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="ROLLBACK\nОтвет 404"];
+  d8 [shape=diamond, margin=0.01, label="Гостей больше\nвместимости?", group="main"];
+  e3 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="ROLLBACK\nОтвет 400"];
+  d9 [shape=diamond, margin=0.01, label="has_overlap:\nесть бронь new/\nconfirmed на\nэтот\nстолик и дату,\nпересекающаяся\nпо времени?", group="main"];
+  e4 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="ROLLBACK\nОтвет 409"];
+  d10 [shape=diamond, margin=0.01, label="Гость с таким\nтелефоном есть?", group="main"];
+  p5 [shape=box, label="UPDATE guests:\nФИО, email\n(если указан)"];
+  p6 [shape=box, label="INSERT INTO\nguests"];
+  p7 [shape=box, label="INSERT INTO bookings\n(status = 'new')\nCOMMIT", group="main"];
+  e5 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="ROLLBACK,\nответ 500"];
+  p8 [shape=box, peripheries=2, label="booking =\ndb.get_booking(id)", group="main"];
+  p9 [shape=box, peripheries=2, label="booking.notified =\nnotify_admins(booking)", group="main"];
+  out [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="Ответ 201\nс данными брони", group="main"];
+  end [shape=box, style="rounded", peripheries=1, label="Конец", group="main"];
+  a -> p4 [];
+  p4 -> d7 [];
+  d7 -> e2 [xlabel="нет"];
+  d7 -> d8 [xlabel="да"];
+  d8 -> e3 [xlabel="да"];
+  d8 -> d9 [xlabel="нет"];
+  d9 -> e4 [xlabel="да"];
+  d9 -> d10 [xlabel="нет"];
+  d10 -> p5 [xlabel="да"];
+  d10 -> p6 [xlabel="нет"];
+  p5 -> p7 [];
+  p6 -> p7 [];
+  p7 -> e5 [xlabel="исключение", style=dashed];
+  p7 -> p8 [];
+  p8 -> p9 [];
+  p9 -> out [];
+  out -> end [];
+  e2 -> end [];
+  e3 -> end [];
+  e4 -> end [];
+  e5 -> end [];
+}

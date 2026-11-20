@@ -13,6 +13,7 @@
 - `PP.11/stage2/` — этап 2 (ПП.11): описание бэкенда (`backend.md`), вывод проверки API (`api_demo.txt`), отчёт (`report_stage2.docx`).
 - `PP.11/app/static/`, `vk.py`, `vk_bot.py`, `tests/` — этап 3: веб-форма брони со схемой зала, пересылка брони в беседу администраторов ВКонтакте с кнопками «Подтвердить»/«Отклонить», модульные тесты.
 - `PP.11/stage3/` — этап 3 (ПП.11): описание (`frontend_vk.md`), снимки экрана (`screens/`), вывод тестов (`tests_output.txt`) и проверки в ВК (`vk_demo.txt`), отчёт (`report_stage3.docx`).
+- `PP.11/stage4/` — этап 4 (ПП.11): тестирование всего сценария и обработка ошибок (`testing.md`, `tests_output.txt`, `errors_demo.txt`, `screens/`), блок-схемы по коду (`flowcharts/`), отчёт по этапу 4 (`report_stage4.docx`) и итоговый отчёт по ПП.11 (`final_pp11.md`, `report_pp11_final.docx`).
 
 ## Запуск бэкенда
 ```
@@ -28,5 +29,5 @@ cp .env.example .env          # вписать VK_TOKEN, VK_GROUP_ID, VK_PEER_ID
 set -a; . ./.env; set +a
 python app.py                 # веб-форма и API
 python vk_bot.py              # обработка кнопок «Подтвердить»/«Отклонить»
-python -m unittest discover -s tests -v
+python -m pytest -v tests     # 79 тестов, VK API заменён заглушкой (этап 4)
 ```

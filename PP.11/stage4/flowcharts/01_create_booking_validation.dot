@@ -1,0 +1,43 @@
+digraph G {
+  graph [fontname="DejaVu Sans", nodesep=0.22, ranksep=0.28, splines=ortho, newrank=true];
+  node  [fontname="DejaVu Sans", fontsize=13, shape=box, width=1.2, margin="0.08,0.04"];
+  edge  [fontname="DejaVu Sans", fontsize=10, arrowsize=0.7];
+
+  s [shape=box, style="rounded", peripheries=1, label="Начало\nPOST /api/bookings", group="main"];
+  in [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="data = тело\nзапроса (JSON)", group="main"];
+  d0 [shape=diamond, margin=0.01, label="data —\nJSON-объект?", group="main"];
+  e0 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="Ответ 400\n«Ожидается\nJSON-объект»"];
+  p1 [shape=box, peripheries=2, label="parse_interval(data):\nдата, начало, конец", group="main"];
+  d1 [shape=diamond, margin=0.01, label="Дата ГГГГ-ММ-ДД\nи не в прошлом,\nвремя ЧЧ:ММ,\nначало < конца?", group="main"];
+  p2 [shape=box, peripheries=2, label="parse_guests(guests)", group="main"];
+  d2 [shape=diamond, margin=0.01, label="Целое\nот 1 до 50?", group="main"];
+  p3 [shape=box, label="name, phone (без\nпробелов,\nскобок, дефисов), email\n(пустой → None)", group="main"];
+  d3 [shape=diamond, margin=0.01, label="ФИО не пустое\nи ≤ 100?", group="main"];
+  d4 [shape=diamond, margin=0.01, label="Телефон\n+7XXXXXXXXXX?", group="main"];
+  d5 [shape=diamond, margin=0.01, label="Email пуст\nили корректен?", group="main"];
+  d6 [shape=diamond, margin=0.01, label="table_id —\nцелое?", group="main"];
+  e1 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="Ответ 400\nс текстом\nошибки"];
+  a [shape=box, style="rounded", peripheries=1, label="К транзакции\n(рисунок 2)", group="main"];
+  end [shape=box, style="rounded", peripheries=1, label="Конец"];
+  s -> in [];
+  in -> d0 [];
+  d0 -> e0 [xlabel="нет"];
+  d0 -> p1 [xlabel="да"];
+  p1 -> d1 [];
+  d1 -> e1 [xlabel="нет"];
+  d1 -> p2 [xlabel="да"];
+  p2 -> d2 [];
+  d2 -> e1 [xlabel="нет"];
+  d2 -> p3 [xlabel="да"];
+  p3 -> d3 [];
+  d3 -> e1 [xlabel="нет"];
+  d3 -> d4 [xlabel="да"];
+  d4 -> e1 [xlabel="нет"];
+  d4 -> d5 [xlabel="да"];
+  d5 -> e1 [xlabel="нет"];
+  d5 -> d6 [xlabel="да"];
+  d6 -> e1 [xlabel="нет"];
+  d6 -> a [xlabel="да"];
+  e0 -> end [];
+  e1 -> end [];
+}

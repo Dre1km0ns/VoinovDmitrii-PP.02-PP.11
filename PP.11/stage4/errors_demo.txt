@@ -1,0 +1,61 @@
+# ПП.11, этап 4. Обработка ошибок на запущенном сервере (20.11.2026 23:54 МСК)
+# ВКонтакте «недоступен»: VK_API_HOST=127.0.0.1:9 (закрытый порт), токен ненастоящий.
+# Настоящая беседа администраторов не используется.
+
+$ BOOKING_DB=/tmp/demo4.sqlite VK_TOKEN=*** VK_PEER_ID=2000000001 VK_API_HOST=127.0.0.1:9 VK_TIMEOUT=2 PORT=5003 python app.py
+
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{"name":"Тестовый Гость","phone":"+7 900 000-00-00","table_id":3,"date":"2026-11-27","start":"19:00","end":"21:00","guests":4}'
+{"created_at":"2026-11-20T23:54:53","date":"2026-11-27","end":"21:00","guest":{"email":null,"name":"Тестовый Гость","phone":"+79000000000"},"guests":4,"id":1,"notified":false,"start":"19:00","status":"new","table":{"capacity":4,"hall":"Основной","id":3,"number":3}}
+ [HTTP 201]
+
+$ curl http://127.0.0.1:5003/api/bookings/1
+{"created_at":"2026-11-20T23:54:53","date":"2026-11-27","end":"21:00","guest":{"email":null,"name":"Тестовый Гость","phone":"+79000000000"},"guests":4,"id":1,"start":"19:00","status":"new","table":{"capacity":4,"hall":"Основной","id":3,"number":3}}
+ [HTTP 200]
+
+# неверные данные
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{"name":"Гость","phone":"+79000000001","table_id":3,"date":"2020-01-01","start":"19:00","end":"21:00","guests":4}'
+{"error":"Нельзя забронировать столик на прошедшую дату"}
+ [HTTP 400]
+
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{"name":"Гость","phone":"12345","table_id":3,"date":"2026-11-27","start":"19:00","end":"21:00","guests":4}'
+{"error":"Телефон должен быть в формате +7XXXXXXXXXX"}
+ [HTTP 400]
+
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{"name":"Гость","phone":"+79000000001","email":"не-email","table_id":3,"date":"2026-11-27","start":"19:00","end":"21:00","guests":4}'
+{"error":"Email указан неверно"}
+ [HTTP 400]
+
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{"name":"Гость","phone":"+79000000001","table_id":3,"date":"2026-11-27","start":"20:00","end":"22:00","guests":4}'
+{"error":"Столик уже забронирован на это время"}
+ [HTTP 409]
+
+$ curl -X POST http://127.0.0.1:5003/api/bookings -H 'Content-Type: application/json' -d '{не json'
+{"error":"Ожидается JSON-объект"}
+ [HTTP 400]
+
+$ curl 'http://127.0.0.1:5003/api/tables?hall_id=1%20OR%201=1'
+{"error":"Номер зала должен быть целым числом"}
+ [HTTP 400]
+
+$ curl http://127.0.0.1:5003/api/nope
+{"error":"Не найдено"}
+ [HTTP 404]
+
+$ curl http://127.0.0.1:5003/api/bookings
+{"error":"Метод не поддерживается"}
+ [HTTP 405]
+
+# журнал сервера
+2026-11-20 23:54:53,742 vk WARNING messages.send: VK API network: ConnectionError, повтор 1 из 2
+2026-11-20 23:54:54,743 vk WARNING messages.send: VK API network: ConnectionError, повтор 2 из 2
+2026-11-20 23:54:56,745 app ERROR Бронь №1 не отправлена в ВК: VK API network: ConnectionError
+2026-11-20 23:54:56,745 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 201 -
+2026-11-20 23:54:56,754 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "GET /api/bookings/1 HTTP/1.1" 200 -
+2026-11-20 23:54:56,761 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 400 -
+2026-11-20 23:54:56,768 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 400 -
+2026-11-20 23:54:56,775 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 400 -
+2026-11-20 23:54:56,783 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 409 -
+2026-11-20 23:54:56,791 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "POST /api/bookings HTTP/1.1" 400 -
+2026-11-20 23:54:56,798 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "GET /api/tables?hall_id=1%20OR%201=1 HTTP/1.1" 400 -
+2026-11-20 23:54:56,805 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "GET /api/nope HTTP/1.1" 404 -
+2026-11-20 23:54:56,811 werkzeug INFO 127.0.0.1 - - [20/Nov/2026 23:54:56] "GET /api/bookings HTTP/1.1" 405 -

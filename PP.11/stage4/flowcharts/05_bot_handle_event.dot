@@ -1,0 +1,43 @@
+digraph G {
+  graph [fontname="DejaVu Sans", nodesep=0.22, ranksep=0.28, splines=ortho, newrank=true];
+  node  [fontname="DejaVu Sans", fontsize=13, shape=box, width=1.2, margin="0.08,0.04"];
+  edge  [fontname="DejaVu Sans", fontsize=10, arrowsize=0.7];
+
+  s [shape=box, style="rounded", peripheries=1, label="Начало\nhandle_event(event)", group="main"];
+  d0 [shape=diamond, margin=0.01, label="peer_id = беседа\nадминистраторов?", group="main"];
+  r0 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="Вернуть «чужая беседа,\nпропуск»"];
+  p1 [shape=box, label="payload: если строка —\njson.loads\n(ошибка разбора →\nпустой)", group="main"];
+  p2 [shape=box, label="decision =\nDECISIONS[action]\nbooking_id =\nint(payload.booking_id)", group="main"];
+  d1 [shape=diamond, margin=0.01, label="decision и\nbooking_id есть?", group="main"];
+  a1 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="sendMessageEventAnswer:\n«Неизвестная кнопка»"];
+  p3 [shape=box, peripheries=2, label="db.decide_booking:\nUPDATE bookings\nSET status WHERE id AND\nstatus = 'new'", group="main"];
+  p4 [shape=box, peripheries=2, label="booking = db.get_booking\n(booking_id)", group="main"];
+  d2 [shape=diamond, margin=0.01, label="Бронь\nнайдена?", group="main"];
+  a2 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="sendMessageEventAnswer:\n«Бронь №N не найдена»"];
+  d3 [shape=diamond, margin=0.01, label="Статус\nизменён?", group="main"];
+  a3 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="sendMessageEventAnswer:\n«Бронь №N уже <статус>»"];
+  p5 [shape=box, peripheries=2, label="who =\nadmin_name(user_id)\n(users.get; ошибка →\n«id<user_id>»)", group="main"];
+  p6 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="messages.edit: текст\nброни +\n«✅ Подтверждено/❌\nОтклонено: who»,\nпустая клавиатура", group="main"];
+  a4 [shape=polygon, sides=4, skew=0.2, margin="0.04,0.04", label="sendMessageEventAnswer:\n«Бронь №N\nподтверждена/отклонена»", group="main"];
+  end [shape=box, style="rounded", peripheries=1, label="Конец", group="main"];
+  s -> d0 [];
+  d0 -> r0 [xlabel="нет"];
+  d0 -> p1 [xlabel="да"];
+  p1 -> p2 [];
+  p2 -> d1 [];
+  d1 -> a1 [xlabel="нет"];
+  d1 -> p3 [xlabel="да"];
+  p3 -> p4 [];
+  p4 -> d2 [];
+  d2 -> a2 [xlabel="нет"];
+  d2 -> d3 [xlabel="да"];
+  d3 -> a3 [xlabel="нет"];
+  d3 -> p5 [xlabel="да"];
+  p5 -> p6 [];
+  p6 -> a4 [];
+  a4 -> end [];
+  a3 -> end [];
+  a2 -> end [];
+  a1 -> end [];
+  r0 -> end [];
+}
