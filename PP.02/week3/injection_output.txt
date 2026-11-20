@@ -1,0 +1,16 @@
+
+=== обычный ввод: '+79161234501' ===
+  find_guest_UNSAFE  найдено строк: 1
+                     выполнен SQL: SELECT id, full_name, phone FROM cafe.guests WHERE phone = '+79161234501'
+  find_guest_safe    найдено строк: 1
+
+=== инъекция: выдать всех гостей: "' OR '1'='1" ===
+  find_guest_UNSAFE  найдено строк: 12
+                     выполнен SQL: SELECT id, full_name, phone FROM cafe.guests WHERE phone = '' OR '1'='1'
+  find_guest_safe    найдено строк: 0
+
+=== инъекция: удалить брони: "'; DELETE FROM cafe.bookings; --" ===
+  find_guest_UNSAFE  ОШИБКА СУБД: ERROR:  permission denied for table bookings
+  find_guest_safe    найдено строк: 0
+
+Броней в базе после попыток: 16 — удаление не прошло (у менеджера нет права DELETE, а параметризованный запрос не выполняет внедрённый SQL)

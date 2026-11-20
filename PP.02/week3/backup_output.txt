@@ -1,0 +1,24 @@
+$ PGUSER=cafe_backup PGPASSWORD=*** ./backup.sh
+./backups/cafe_booking_20261121_000807.dump
+
+$ ls -l backups/
+-rw------- 43396 cafe_booking_20261121_000807.dump
+-rw------- 100 cafe_booking_20261121_000807.dump.sha256
+
+$ cat backups/*.sha256
+bb3a1c26ef345258663376af4adf546ab98927e0c2f07cb22a72907807415da9  cafe_booking_20261121_000807.dump
+
+# роль cafe_backup может только читать:
+$ PGUSER=cafe_backup psql -d cafe_booking -c "DELETE FROM cafe.bookings"
+ERROR:  permission denied for table bookings
+
+$ ./restore_check.sh ./backups/cafe_booking_20261121_000807.dump      # от администратора СУБД
+Контрольная сумма совпадает
+рабочая база:        audit_log=9 bookings=16 cafe_tables=12 guests=12 halls=3 roles=3 users=4
+восстановленная база: audit_log=9 bookings=16 cafe_tables=12 guests=12 halls=3 roles=3 users=4
+Восстановление проверено: данные совпадают
+
+# ротация: при BACKUP_KEEP=2 после трёх запусков остаются две последние копии
+$ ls backups/*.dump
+backups/cafe_booking_20261121_000809.dump
+backups/cafe_booking_20261121_000810.dump

@@ -1,0 +1,95 @@
+
+=== 1. Роли и их членство ===
+  cafe_admin             группа  член: —
+  cafe_guest             группа  член: —
+  cafe_manager           группа  член: —
+  cafe_admin_ivanova     вход    член: cafe_admin
+  cafe_backup            вход    член: pg_read_all_data
+  cafe_manager_petrov    вход    член: cafe_manager
+  cafe_web               вход    член: cafe_guest
+
+=== 2. Матрица прав на таблицы (has_any_column_privilege, has_table_privilege) ===
+  таблица      cafe_admin     cafe_manager   cafe_guest    
+  roles        S I U D        —              —             
+  users        S I U D        S              —             
+  guests       S I U D        S I U          —             
+  halls        S I U D        S              S             
+  cafe_tables  S I U D        S              S             
+  bookings     S I U D        S I U          —             
+  audit_log    S              —              —             
+  (S, I, U — SELECT, INSERT, UPDATE хотя бы одного столбца; D — DELETE)
+
+=== 3. Администратор (cafe_admin_ivanova) ===
+  РАЗРЕШЕНО  добавить зал: 1 строк
+              (4,)
+  РАЗРЕШЕНО  переименовать зал: изменено строк: 1
+  РАЗРЕШЕНО  удалить зал: изменено строк: 1
+  РАЗРЕШЕНО  список пользователей без хешей: 4 строк
+              (1, 'site', 3)
+              (2, 'admin.ivanova', 1)
+              (3, 'manager.petrov', 2)
+  ЗАПРЕЩЕНО  прочитать хеши паролей: ERROR:  permission denied for table users
+  РАЗРЕШЕНО  прочитать журнал аудита: 1 строк
+              (3,)
+  ЗАПРЕЩЕНО  исправить запись журнала: ERROR:  permission denied for table audit_log
+  ЗАПРЕЩЕНО  удалить журнал: ERROR:  permission denied for table audit_log
+
+=== 4. Менеджер (cafe_manager_petrov) ===
+  РАЗРЕШЕНО  брони на завтра: 6 строк
+              (1, 3, 'new')
+              (2, 1, 'confirmed')
+              (3, 4, 'confirmed')
+  РАЗРЕШЕНО  подтвердить бронь №1: изменено строк: 1
+  ЗАПРЕЩЕНО  перенести бронь на другой столик: ERROR:  permission denied for table bookings
+  ЗАПРЕЩЕНО  удалить бронь: ERROR:  permission denied for table bookings
+  РАЗРЕШЕНО  добавить гостя: 1 строк
+              (11,)
+  ЗАПРЕЩЕНО  прочитать хеши паролей: ERROR:  permission denied for table users
+  ЗАПРЕЩЕНО  добавить столик: ERROR:  permission denied for table cafe_tables
+  ЗАПРЕЩЕНО  прочитать журнал аудита: ERROR:  permission denied for table audit_log
+  ЗАПРЕЩЕНО  задать пароль пользователю: ERROR:  permission denied for function set_password
+
+=== 5. Гость — сайт (cafe_web) ===
+  РАЗРЕШЕНО  залы и столики: 3 строк
+              ('Основной', 7)
+              ('VIP', 2)
+              ('Веранда', 3)
+  РАЗРЕШЕНО  свободные столики через функцию: 9 строк
+              (2, 'Основной', 2, 4)
+              (3, 'Основной', 3, 4)
+              (4, 'Основной', 4, 6)
+  РАЗРЕШЕНО  забронировать через функцию: 1 строк
+              (16,)
+  ЗАПРЕЩЕНО  прочитать гостей (персональные данные): ERROR:  permission denied for table guests
+  ЗАПРЕЩЕНО  прочитать брони: ERROR:  permission denied for table bookings
+  ЗАПРЕЩЕНО  вставить бронь напрямую: ERROR:  permission denied for table bookings
+  ЗАПРЕЩЕНО  прочитать пользователей: ERROR:  permission denied for table users
+
+=== 6. Хеширование паролей ===
+  РАЗРЕШЕНО  set_password('admin.ivanova', <случайный пароль>): 1 строк
+  РАЗРЕШЕНО  set_password('manager.petrov', <случайный пароль>): 1 строк
+  ЗАПРЕЩЕНО  слабый пароль 'qwerty': ERROR:  Пароль должен быть не короче 8 символов и содержать буквы и цифры
+  Хранится (выведено владельцем базы):
+    site              !…                              длина 1
+    admin.ivanova     $2a$10$TvQVEIr10xf8.E0ZLG0aqO…  длина 60
+    manager.petrov    $2a$10$QiXLk5LhGkhFL0i0fpyFDO…  длина 60
+    manager.sidorova  !…                              длина 1
+  Открытого пароля в хеше нет: True
+  РАЗРЕШЕНО  вход manager.petrov с верным паролем: 1 строк
+              (3, 'Петров Олег Викторович', 'менеджер')
+  РАЗРЕШЕНО  вход с неверным паролем (пустой ответ = отказ): 0 строк
+  РАЗРЕШЕНО  вход записи site без пароля (пустой ответ = отказ): 0 строк
+  ЗАПРЕЩЕНО  записать пароль открытым текстом: ERROR:  new row for relation "users" violates check constraint "ck_users_password_bcrypt"
+
+=== 7. Журнал аудита (последние записи) ===
+  №1   00:08:06 cafe_admin_ivanova   INSERT halls       id=4   id: 4, name: Терраса, description: тест
+  №2   00:08:06 cafe_admin_ivanova   UPDATE halls       id=4   description: тест → Летняя терраса
+  №3   00:08:06 cafe_admin_ivanova   DELETE halls       id=4   id: 4, name: Терраса, description: Летняя терраса
+  №4   00:08:06 cafe_manager_petrov  UPDATE bookings    id=1   status: new → confirmed
+  №5   00:08:06 cafe_manager_petrov  INSERT guests      id=11  id: 11, email: None, phone: +79990000001, full_name: Новый Гость
+  №6   00:08:06 cafe_web             INSERT guests      id=12  id: 12, email: None, phone: +79990000002, full_name: Гость Сайта
+  №7   00:08:06 cafe_web             INSERT bookings    id=16  id: 16, status: new, user_id: 1, guest_id: 12, table_id: 3, time_end: 21:00:0…
+  №8   00:08:06 cafe_admin_ivanova   UPDATE users       id=2   password_hash: *** → *** (изменён)
+  №9   00:08:06 cafe_admin_ivanova   UPDATE users       id=3   password_hash: *** → *** (изменён)
+  ЗАПРЕЩЕНО  владелец базы удаляет записи журнала: ERROR:  Журнал аудита нельзя изменять или удалять
+  ЗАПРЕЩЕНО  владелец базы очищает журнал: ERROR:  Журнал аудита нельзя изменять или удалять
